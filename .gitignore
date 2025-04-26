@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtuální prostředí
+.venv/
+env/
+venv/
+
+# Výstupy tréninku
+saved_models/
+plots/
+
+# Konfigurační a systémové soubory
+*.log
+*.DS_Store
+*.idea/
+.vscode/
