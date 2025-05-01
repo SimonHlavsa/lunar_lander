@@ -7,27 +7,23 @@
 # TEST RUN 3c - 
 
 
-RUN_ID            = "4"                 # inkrementujte při každém novém tréninku
+RUN_ID            = "5"                 # inkrementujte při každém novém tréninku
 ENV_NAME          = "LunarLander-v3"
 
 # --- náhodný seed ------------------------------------------------------------
 SEED              = 42                # jediný zdroj pravdy pro replikovatelnost
 
 # --- délka a granularita tréninku -------------------------------------------
-NUM_EPISODES      = 4000              # delší trénink pro robustní konvergenci
-BATCH_SIZE        = 256               # větší batch pro rychlejší sběr gradientů
+NUM_EPISODES      = 3000              # delší trénink pro robustní konvergenci
+BATCH_SIZE        = 128               # větší batch pro rychlejší sběr gradientů
 
 # --- algoritmus DQN ----------------------------------------------------------
 GAMMA             = 0.99              # diskontní faktor
-LR                = 0.0003            # rychlost učení (ponecháno 5e-4)
+LR                = 0.0005            # rychlost učení (ponecháno 5e-4)
 EPS_START         = 1.0               # počáteční pravděpodobnost průzkumu
-EPS_END           = 0.05              # minimální ε
-EPS_DECAY         = 0.998            # pomalejší pokles ε
-TARGET_UPDATE     = 2                 # frekvence synchronizace target-netu (v epizodách)
-
-# --- scheduler ---------------------------------------------------------------
-SCHED_STEP_EPISODES = 2500   # po kolika epizodách snížit LR
-SCHED_GAMMA         = 0.5    # násobek; 0.5 = na polovinu
+EPS_END           = 0.01              # minimální ε
+EPS_DECAY         = 0.995             # pomalejší pokles ε
+TARGET_UPDATE     = 5                 # frekvence synchronizace target-netu (v epizodách)
 
 # --- replay buffer -----------------------------------------------------------
 BUFFER_CAPACITY   = 100_000           # maximální velikost paměti

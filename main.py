@@ -11,7 +11,6 @@ from collections import deque
 import config
 import numpy as np
 from torch.nn.utils import clip_grad_norm_
-from torch.optim.lr_scheduler import StepLR
 
 # Vytvoření složek
 os.makedirs("saved_models", exist_ok=True)
@@ -39,11 +38,6 @@ target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
 optimizer = optim.Adam(policy_net.parameters(), lr=config.LR)
-scheduler = StepLR(
-    optimizer,
-    step_size=config.SCHED_STEP_EPISODES,  # kolik epizod mezi snížením
-    gamma=config.SCHED_GAMMA               # kolikrát se LR vynásobí
-)
 replay_buffer = ReplayBuffer(capacity=config.BUFFER_CAPACITY)
 
 epsilon = config.EPS_START
@@ -52,7 +46,6 @@ success_history = []
 moving_avg = []
 reward_window = deque(maxlen=config.MOVING_AVG_WIN)
 success_window = deque(maxlen=200)
-training_started = False
 
 for episode in range(config.NUM_EPISODES):
     state, _ = env.reset()
@@ -87,7 +80,6 @@ for episode in range(config.NUM_EPISODES):
             loss.backward()
             clip_grad_norm_(policy_net.parameters(), max_norm=10)
             optimizer.step()
-            training_started = True 
 
     reward_history.append(total_reward)
     reward_window.append(total_reward)
@@ -111,15 +103,16 @@ for episode in range(config.NUM_EPISODES):
     if episode % config.TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
-    if training_started:
-        scheduler.step()  
-
     if episode % 10 == 0:
-        current_lr = scheduler.get_last_lr()[0]
         current_sr = np.mean(success_window) if success_window else 0.0
-        print(f"Epizoda {episode}, Reward: {total_reward:.2f}, MA(100): {moving_avg_val:7.1f}, LR: {current_lr:7.5f}, Epsilon: {epsilon:.3f}, SR(200): {current_sr:5.2f}")
+        print(f"Epizoda {episode}, Reward: {total_reward:.2f}, MA(100): {moving_avg_val:7.1f}, Epsilon: {epsilon:.3f}, SR(200): {current_sr:5.2f}")
 
-    
+    if len(moving_avg) >= 200:
+        ma_window = np.mean(moving_avg[-200:])
+        sr_window = np.mean(success_history[-200:])
+        if ma_window >= 200 and sr_window >= 0.9:
+            print(f"Kritérium splněno v epizodě {episode}. Trénink ukončen.")
+            break
 
 # Uložení modelu
 torch.save(policy_net.state_dict(), config.MODEL_SAVE_PATH)
