@@ -3,18 +3,32 @@
 import gymnasium as gym
 import torch
 import torch.optim as optim
-import os
+import os, random
 from model import QNetwork
 from buffer import ReplayBuffer
-from utils import select_action, plot_rewards
+from utils import plot_rewards_only, plot_success_rate, select_action, write_csv_log
+from collections import deque
 import config
+import numpy as np
+from torch.optim.lr_scheduler import StepLR
 
 # Vytvoření složek
 os.makedirs("saved_models", exist_ok=True)
 os.makedirs("plots", exist_ok=True)
+os.makedirs("csv", exist_ok=True)
 
 # Inicializace prostředí
+# 1) globální inicializace random seedů -------------------------------
+random.seed(config.SEED)
+np.random.seed(config.SEED)
+torch.manual_seed(config.SEED)
+
+# 2) prostředí se seedem a deterministickou action space -------------
 env = gym.make(config.ENV_NAME)
+env.reset(seed=config.SEED)
+env.action_space.seed(config.SEED)
+# --------------------------------------------------------------------
+
 state_size = env.observation_space.shape[0]
 action_size = env.action_space.n
 
@@ -24,10 +38,18 @@ target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
 optimizer = optim.Adam(policy_net.parameters(), lr=config.LR)
+scheduler = StepLR(
+    optimizer,
+    step_size=config.LR_STEP_EP,
+    gamma=config.LR_GAMMA
+)
 replay_buffer = ReplayBuffer(capacity=config.BUFFER_CAPACITY)
 
 epsilon = config.EPS_START
 reward_history = []
+success_history = []
+moving_avg      = []
+reward_window   = deque(maxlen=config.MOVING_AVG_WIN)
 
 for episode in range(config.NUM_EPISODES):
     state, _ = env.reset()
@@ -63,6 +85,20 @@ for episode in range(config.NUM_EPISODES):
             optimizer.step()
 
     reward_history.append(total_reward)
+    reward_window.append(total_reward)
+    moving_avg_val = np.mean(reward_window)
+    moving_avg.append(moving_avg_val)
+    success_flag = total_reward >= config.SUCCESS_THRESHOLD
+    success_history.append(success_flag)
+
+    write_csv_log(
+        config.CSV_LOG_PATH,
+        episode,
+        total_reward,
+        moving_avg_val,
+        epsilon,
+        success_flag,
+    )
 
     epsilon = max(config.EPS_END, epsilon * config.EPS_DECAY)
 
@@ -76,7 +112,8 @@ for episode in range(config.NUM_EPISODES):
 torch.save(policy_net.state_dict(), config.MODEL_SAVE_PATH)
 
 # Plot odměn
-plot_rewards(reward_history, config.PLOT_SAVE_PATH)
+plot_rewards_only(reward_history, moving_avg, config.REWARD_PLOT_PATH)
+plot_success_rate(success_history, config.SRATE_PLOT_PATH)
 
 config.RUN_ID += 1
 

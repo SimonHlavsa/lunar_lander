@@ -11,6 +11,7 @@ venv/
 
 # Výstupy tréninku
 saved_models/
+csv/
 plots/
 
 # Konfigurační a systémové soubory
