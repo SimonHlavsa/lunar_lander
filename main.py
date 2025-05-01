@@ -10,7 +10,7 @@ from utils import plot_rewards_only, plot_success_rate, select_action, write_csv
 from collections import deque
 import config
 import numpy as np
-from torch.optim.lr_scheduler import StepLR
+from torch.nn.utils import clip_grad_norm_
 
 # Vytvoření složek
 os.makedirs("saved_models", exist_ok=True)
@@ -38,18 +38,14 @@ target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
 optimizer = optim.Adam(policy_net.parameters(), lr=config.LR)
-scheduler = StepLR(
-    optimizer,
-    step_size=config.LR_STEP_EP,
-    gamma=config.LR_GAMMA
-)
 replay_buffer = ReplayBuffer(capacity=config.BUFFER_CAPACITY)
 
 epsilon = config.EPS_START
 reward_history = []
 success_history = []
-moving_avg      = []
-reward_window   = deque(maxlen=config.MOVING_AVG_WIN)
+moving_avg = []
+reward_window = deque(maxlen=config.MOVING_AVG_WIN)
+success_window = deque(maxlen=200)
 
 for episode in range(config.NUM_EPISODES):
     state, _ = env.reset()
@@ -90,7 +86,8 @@ for episode in range(config.NUM_EPISODES):
     moving_avg.append(moving_avg_val)
     success_flag = total_reward >= config.SUCCESS_THRESHOLD
     success_history.append(success_flag)
-
+    success_window.append(success_flag)
+    
     write_csv_log(
         config.CSV_LOG_PATH,
         episode,
@@ -106,7 +103,8 @@ for episode in range(config.NUM_EPISODES):
         target_net.load_state_dict(policy_net.state_dict())
 
     if episode % 10 == 0:
-        print(f"Epizoda {episode}, Reward: {total_reward:.2f}, Epsilon: {epsilon:.3f}")
+        current_sr = np.mean(success_window) if success_window else 0.0
+        print(f"Epizoda {episode}, Reward: {total_reward:.2f}, MA(100): {moving_avg_val:7.1f}, Epsilon: {epsilon:.3f}, SR(200): {current_sr:5.2f}")
 
 # Uložení modelu
 torch.save(policy_net.state_dict(), config.MODEL_SAVE_PATH)
@@ -114,7 +112,5 @@ torch.save(policy_net.state_dict(), config.MODEL_SAVE_PATH)
 # Plot odměn
 plot_rewards_only(reward_history, moving_avg, config.REWARD_PLOT_PATH)
 plot_success_rate(success_history, config.SRATE_PLOT_PATH)
-
-config.RUN_ID += 1
 
 env.close()

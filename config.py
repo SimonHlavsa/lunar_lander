@@ -1,6 +1,13 @@
 # config.py – centrální konfigurace experimentu
 
-RUN_ID            = "2"                 # inkrementujte při každém novém tréninku
+# TEST RUN 1 - 33 minut
+# TEST RUN 2 - 45 minut a 21 sekund
+# TEST RUN 3a - 
+# TEST RUN 3b - 
+# TEST RUN 3a - 
+
+
+RUN_ID            = "3a"                 # inkrementujte při každém novém tréninku
 ENV_NAME          = "LunarLander-v3"
 
 # --- náhodný seed ------------------------------------------------------------
@@ -14,9 +21,9 @@ BATCH_SIZE        = 128               # větší batch pro rychlejší sběr gra
 GAMMA             = 0.99              # diskontní faktor
 LR                = 0.0005            # rychlost učení (ponecháno 5e-4)
 EPS_START         = 1.0               # počáteční pravděpodobnost průzkumu
-EPS_END           = 0.01              # minimální ε
-EPS_DECAY         = 0.995             # pomalejší pokles ε
-TARGET_UPDATE     = 5                 # frekvence synchronizace target-netu (v epizodách)
+EPS_END           = 0.05              # minimální ε
+EPS_DECAY         = 0.998            # pomalejší pokles ε
+TARGET_UPDATE     = 2                 # frekvence synchronizace target-netu (v epizodách)
 
 # --- replay buffer -----------------------------------------------------------
 BUFFER_CAPACITY   = 100_000           # maximální velikost paměti
