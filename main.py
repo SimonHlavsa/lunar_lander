@@ -78,6 +78,7 @@ for episode in range(config.NUM_EPISODES):
 
             optimizer.zero_grad()
             loss.backward()
+            clip_grad_norm_(policy_net.parameters(), max_norm=10)
             optimizer.step()
 
     reward_history.append(total_reward)
