@@ -1,124 +1,119 @@
-# main.py - hlavní trénovací smyčka
+"""
+Hlavní trénovací skript DQN pro LunarLander-v3
+"""
+
+import os
+import random
+from collections import deque
 
 import gymnasium as gym
+import numpy as np
 import torch
 import torch.optim as optim
-import os, random
-from model import QNetwork
-from buffer import ReplayBuffer
-from utils import plot_rewards_only, plot_success_rate, select_action, write_csv_log
-from collections import deque
-import config
-import numpy as np
 from torch.nn.utils import clip_grad_norm_
 
-# Vytvoření složek
+import config
+from buffer import ReplayBuffer
+from model import QNetwork
+from utils import (
+    plot_rewards_only,
+    plot_success_rate,
+    select_action,
+    write_csv_log,
+)
+
+# složky pro výstupy
 os.makedirs("saved_models", exist_ok=True)
 os.makedirs("plots", exist_ok=True)
 os.makedirs("csv", exist_ok=True)
 
-# Inicializace prostředí
-# 1) globální inicializace random seedů -------------------------------
+# deterministické prostředí a RNG
 random.seed(config.SEED)
 np.random.seed(config.SEED)
 torch.manual_seed(config.SEED)
 
-# 2) prostředí se seedem a deterministickou action space -------------
 env = gym.make(config.ENV_NAME)
 env.reset(seed=config.SEED)
 env.action_space.seed(config.SEED)
-# --------------------------------------------------------------------
 
-state_size = env.observation_space.shape[0]
-action_size = env.action_space.n
+state_dim = env.observation_space.shape[0]
+n_actions = env.action_space.n
 
-policy_net = QNetwork(state_size, action_size)
-target_net = QNetwork(state_size, action_size)
+policy_net = QNetwork(state_dim, n_actions)
+target_net = QNetwork(state_dim, n_actions)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
-optimizer = optim.Adam(policy_net.parameters(), lr=config.LR)
-replay_buffer = ReplayBuffer(capacity=config.BUFFER_CAPACITY)
+opt = optim.Adam(policy_net.parameters(), lr=config.LR)
+buffer = ReplayBuffer(config.BUFFER_CAPACITY)
 
-epsilon = config.EPS_START
-reward_history = []
-success_history = []
-moving_avg = []
-reward_window = deque(maxlen=config.MOVING_AVG_WIN)
-success_window = deque(maxlen=200)
+eps = config.EPS_START
+rew_hist, suc_hist, ma_hist = [], [], []
+rew_win = deque(maxlen=config.MOVING_AVG_WIN)
+suc_win = deque(maxlen=200)
 
-for episode in range(config.NUM_EPISODES):
+for ep in range(config.NUM_EPISODES):
     state, _ = env.reset()
-    total_reward = 0
-    done = False
+    done, total_rew = False, 0.0
 
     while not done:
-        action = select_action(state, epsilon, policy_net, action_size)
-        next_state, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
+        action = select_action(state, eps, policy_net, n_actions)
+        next_state, rew, term, trunc, _ = env.step(action)
+        done = term or trunc
 
-        replay_buffer.add((state, action, reward, next_state, done))
+        buffer.add((state, action, rew, next_state, done))
         state = next_state
-        total_reward += reward
+        total_rew += rew
 
-        if len(replay_buffer) >= config.BATCH_SIZE:
-            states, actions, rewards, next_states, dones = replay_buffer.sample(config.BATCH_SIZE)
+        if len(buffer) >= config.BATCH_SIZE:
+            s, a, r, s2, d = buffer.sample(config.BATCH_SIZE)
+            s = torch.tensor(s, dtype=torch.float32)
+            a = torch.tensor(a, dtype=torch.long)
+            r = torch.tensor(r, dtype=torch.float32)
+            s2 = torch.tensor(s2, dtype=torch.float32)
+            d = torch.tensor(d, dtype=torch.float32)
 
-            states = torch.FloatTensor(states)
-            actions = torch.LongTensor(actions)
-            rewards = torch.FloatTensor(rewards)
-            next_states = torch.FloatTensor(next_states)
-            dones = torch.FloatTensor(dones)
+            q = policy_net(s).gather(1, a.unsqueeze(1)).squeeze(1)
+            q_next = target_net(s2).max(1)[0]
+            q_exp = r + config.GAMMA * q_next * (1 - d)
 
-            q_values = policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-            next_q_values = target_net(next_states).max(1)[0]
-            expected_q_values = rewards + (config.GAMMA * next_q_values * (1 - dones))
-
-            loss = torch.nn.functional.smooth_l1_loss(q_values, expected_q_values)
-
-            optimizer.zero_grad()
+            loss = torch.nn.functional.smooth_l1_loss(q, q_exp)
+            opt.zero_grad()
             loss.backward()
-            clip_grad_norm_(policy_net.parameters(), max_norm=10)
-            optimizer.step()
+            clip_grad_norm_(policy_net.parameters(), 10)
+            opt.step()
 
-    reward_history.append(total_reward)
-    reward_window.append(total_reward)
-    moving_avg_val = np.mean(reward_window)
-    moving_avg.append(moving_avg_val)
-    success_flag = total_reward >= config.SUCCESS_THRESHOLD
-    success_history.append(success_flag)
-    success_window.append(success_flag)
-    
-    write_csv_log(
-        config.CSV_LOG_PATH,
-        episode,
-        total_reward,
-        moving_avg_val,
-        epsilon,
-        success_flag,
-    )
+    # logování metrik
+    rew_hist.append(total_rew)
+    rew_win.append(total_rew)
+    ma_val = np.mean(rew_win)
+    ma_hist.append(ma_val)
+    suc_flag = total_rew >= config.SUCCESS_THRESHOLD
+    suc_hist.append(suc_flag)
+    suc_win.append(suc_flag)
 
-    epsilon = max(config.EPS_END, epsilon * config.EPS_DECAY)
+    write_csv_log(config.CSV_LOG_PATH, ep, total_rew, ma_val, eps, suc_flag)
 
-    if episode % config.TARGET_UPDATE == 0:
+    eps = max(config.EPS_END, eps * config.EPS_DECAY)
+
+    if ep % config.TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
-    if episode % 10 == 0:
-        current_sr = np.mean(success_window) if success_window else 0.0
-        print(f"Epizoda {episode}, Reward: {total_reward:.2f}, MA(100): {moving_avg_val:7.1f}, Epsilon: {epsilon:.3f}, SR(200): {current_sr:5.2f}")
+    if ep % 10 == 0:
+        cur_sr = np.mean(suc_win)
+        print(
+            f"Ep {ep:4d} | R {total_rew:6.1f} | "
+            f"MA {ma_val:6.1f} | ε {eps:5.3f} | SR(200) {cur_sr:4.2f}"
+        )
 
-    if len(moving_avg) >= 200:
-        ma_window = np.mean(moving_avg[-200:])
-        sr_window = np.mean(success_history[-200:])
-        if ma_window >= 200 and sr_window >= 0.9:
-            print(f"Kritérium splněno v epizodě {episode}. Trénink ukončen.")
+    if len(ma_hist) >= 200:
+        if np.mean(ma_hist[-200:]) >= 200 and np.mean(suc_hist[-200:]) >= 0.9:
+            print(f"✓ Kritérium splněno v epizodě {ep}.")
             break
 
-# Uložení modelu
+# uložení modelu a grafů
 torch.save(policy_net.state_dict(), config.MODEL_SAVE_PATH)
-
-# Plot odměn
-plot_rewards_only(reward_history, moving_avg, config.REWARD_PLOT_PATH)
-plot_success_rate(success_history, config.SRATE_PLOT_PATH)
+plot_rewards_only(rew_hist, ma_hist, config.REWARD_PLOT_PATH)
+plot_success_rate(suc_hist, config.SRATE_PLOT_PATH)
 
 env.close()

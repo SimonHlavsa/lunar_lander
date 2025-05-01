@@ -1,8 +1,12 @@
-# buffer.py - replay buffer pro učení
+"""
+Jednoduchý replay buffer
+"""
 
-from collections import deque
 import random
+from collections import deque
+
 import numpy as np
+
 
 class ReplayBuffer:
     def __init__(self, capacity=100_000):
