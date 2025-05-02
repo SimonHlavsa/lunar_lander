@@ -27,7 +27,7 @@ with open(config.BENCH_CSV_PATH, "w", newline="") as f:
     writer.writerow(["episode", "reward", "steps", "success"])
 
     for ep in range(1, config.BENCH_EPISODES + 1):
-        state, _ = env.reset()
+        state, _ = env.reset(seed=config.SEED + ep)
         done, ep_rew, ep_steps = False, 0.0, 0
 
         while not done:

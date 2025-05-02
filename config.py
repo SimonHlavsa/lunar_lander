@@ -28,7 +28,7 @@ SUCCESS_THRESHOLD = 200
 MOVING_AVG_WIN = 100
 
 # benchmark
-BENCH_EPISODES = 100      
+BENCH_EPISODES = 500      
 
 # cesty k výstupům
 MODEL_SAVE_PATH = f"saved_models/model_run_{RUN_ID}.pth"
