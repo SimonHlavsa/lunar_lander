@@ -23,7 +23,7 @@ python evaluate.py
 python benchmark.py
 ```
 
-Hyperparametry a cesty změň v `config.py`.
+Hyperparametry a cesty je možné měnit v `config.py`.
 
 ## Struktura
 
