@@ -1,36 +1,38 @@
 """
-Centrální konfigurace
+Globální konfigurační soubor pro experimenty s DQN agentem v prostředí
+gymnasium.LunarLander-v3.
 """
 
-RUN_ID = "4"
-ENV_NAME = "LunarLander-v3"
+# === Identifikace runu =======================================================
+RUN_ID = "4"  # ID runu
+ENV_NAME = "LunarLander-v3"  # prostředí
 
-# náhodný seed
-SEED = 42
+# === SEED ====================================================================
+SEED = 42  # globální seed pro random, NumPy i PyTorch
 
-# trénink
-NUM_EPISODES = 3000
-BATCH_SIZE = 128
+# === Parametry tréninku ======================================================
+NUM_EPISODES = 3_000  # maximální počet epizod
+BATCH_SIZE = 128      # velikost mini‑batche při aktualizaci sítě
 
-# DQN
-GAMMA = 0.99
-LR = 0.0005
-EPS_START = 1.0
-EPS_END = 0.01
-EPS_DECAY = 0.995
-TARGET_UPDATE = 5
+# === Hyperparametry ==========================================================
+GAMMA = 0.99          # diskontní faktor
+LR = 5e-4             # rychlost učení.
+EPS_START = 1.0       # počáteční hodnota epsilon‑greedy
+EPS_END = 0.01        # minimální epsilon
+EPS_DECAY = 0.995     # rozpad epsilonu po každé epizodě
+TARGET_UPDATE = 5     # frekvence kopírování parametrů do target‑sítě
 
-# replay buffer
-BUFFER_CAPACITY = 100_000
+# === Replay buffer ===========================================================
+BUFFER_CAPACITY = 100_000  # maximální velikost bufferu
 
-# metriky
-SUCCESS_THRESHOLD = 200
-MOVING_AVG_WIN = 100
+# === Metriky úspěšnosti ======================================================
+SUCCESS_THRESHOLD = 200    # reward > 200
+MOVING_AVG_WIN = 100       # šířka klouzavého okna pro výpočet průměru rewardu
 
-# benchmark
-BENCH_EPISODES = 500      
+# === Benchmark ===============================================================
+BENCH_EPISODES = 500       # počet epizod pro benchmark
 
-# cesty k výstupům
+# === Výstupní cesty ==========================================================
 MODEL_SAVE_PATH = f"saved_models/model_run_{RUN_ID}.pth"
 REWARD_PLOT_PATH = f"plots/rewards_run_{RUN_ID}.png"
 SRATE_PLOT_PATH = f"plots/srate_run_{RUN_ID}.png"

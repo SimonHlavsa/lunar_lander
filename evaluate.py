@@ -1,5 +1,9 @@
 """
-Spuštění trénovaného agenta s vizualizací
+Interaktivní demo: spustí natrénovaného agenta v renderovacím režimu
+prostředí Gymnasium a zobrazí průběh jedné epizody.
+
+Použití:
+    python evaluate.py
 """
 
 import gymnasium as gym
@@ -8,6 +12,7 @@ import torch
 import config
 from model import QNetwork
 
+# příprava
 env = gym.make(config.ENV_NAME, render_mode="human")
 
 state_dim = env.observation_space.shape[0]
@@ -17,6 +22,7 @@ policy_net = QNetwork(state_dim, n_actions)
 policy_net.load_state_dict(torch.load(config.MODEL_SAVE_PATH))
 policy_net.eval()
 
+# jedna epizoda
 state, _ = env.reset()
 done = False
 

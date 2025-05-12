@@ -1,5 +1,9 @@
 """
-Off-policy benchmark: načte natrénovaný model a odehraje pevný počet epizod
+Off-policy benchmark: načte natrénovaný model a odehraje pevně daný
+počet epizod. Výsledky zapisuje do CSV.
+
+Soubor se spouští samostatně:
+    'python benchmark.py'
 """
 
 import csv
@@ -11,6 +15,7 @@ import torch
 import config
 from model import QNetwork
 
+# inicializace prostředí a nahrání modelu
 env = gym.make(config.ENV_NAME)
 
 state_dim = env.observation_space.shape[0]
@@ -20,6 +25,7 @@ net = QNetwork(state_dim, n_actions)
 net.load_state_dict(torch.load(config.MODEL_SAVE_PATH))
 net.eval()
 
+# benchmark loop
 rewards, steps, successes, hard_landings = [], [], [], []
 
 with open(config.BENCH_CSV_PATH, "w", newline="") as f:
@@ -40,6 +46,7 @@ with open(config.BENCH_CSV_PATH, "w", newline="") as f:
             ep_rew += r
             ep_steps += 1
 
+        # logování jedné epizody
         rewards.append(ep_rew)
         steps.append(ep_steps)
         success = int(ep_rew >= config.SUCCESS_THRESHOLD)
@@ -50,6 +57,7 @@ with open(config.BENCH_CSV_PATH, "w", newline="") as f:
 
 env.close()
 
+# statistiky vypisované v konzoli
 print(f"Benchmark ({config.BENCH_EPISODES} episodes)")
 print(f"Avg reward : {np.mean(rewards):7.1f}")
 print(f"Success-rate (≥200) : {np.mean(successes):7.2%}")

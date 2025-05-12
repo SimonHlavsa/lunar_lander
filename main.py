@@ -1,5 +1,9 @@
 """
-Hlavní trénovací skript DQN pro LunarLander-v3
+Hlavní trénovací skript DQN pro 'LunarLander-v3'.
+
+Spouští učení *Deep Q-Network* s přepisem cílů (target-network) a
+experience replay.  Veškeré hyperparametry, cesty k výstupům a seed se
+načítají z modulu 'config.py'.
 """
 
 import os
@@ -27,7 +31,7 @@ os.makedirs("saved_models", exist_ok=True)
 os.makedirs("plots", exist_ok=True)
 os.makedirs("csv", exist_ok=True)
 
-# deterministické prostředí a RNG
+# nastavení seedů
 random.seed(config.SEED)
 np.random.seed(config.SEED)
 torch.manual_seed(config.SEED)

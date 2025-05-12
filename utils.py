@@ -1,5 +1,5 @@
 """
-Pomocné funkce výběr akce, logování, vykreslování
+Pomocné funkce: výběr akce, logování a vykreslování metrik tréninku.
 """
 
 import csv
@@ -13,7 +13,10 @@ import torch
 
 def select_action(state, eps, net, n_actions):
     """
-    Epsilon-greedy politika
+    Epsilon-greedy výběr akce.
+
+    Zvolí náhodnou akci s pravděpodobností *eps*; v opačném
+    případě vrátí akci s nejvyšší Q-hodnotou podle aktuální politiky.
     """
     if np.random.rand() < eps:
         return np.random.randint(n_actions)
@@ -22,7 +25,10 @@ def select_action(state, eps, net, n_actions):
         return net(state_t).argmax().item()
 
 
-def plot_rewards_only(rewards: List[float], ma: List[float], path: str) -> None:
+def plot_rewards_only(rewards, ma, path):
+    """
+    Uloží graf průběhu odměn a jejich klouzavého průměru.
+    """
     episodes = np.arange(len(rewards))
     plt.figure()
     plt.plot(episodes, rewards, alpha=0.4, label="Reward")
@@ -37,7 +43,10 @@ def plot_rewards_only(rewards: List[float], ma: List[float], path: str) -> None:
     plt.close()
 
 
-def plot_success_rate(success: List[int], path: str) -> None:
+def plot_success_rate(success, path):
+    """
+    Vykreslí kumulativní úspěšnost.
+    """
     episodes = np.arange(len(success))
     rate = np.cumsum(success) / (episodes + 1)
     plt.figure()
@@ -52,7 +61,10 @@ def plot_success_rate(success: List[int], path: str) -> None:
     plt.close()
 
 
-def write_csv_log(path, ep, rew, ma, eps, suc) -> None:
+def write_csv_log(path, ep, rew, ma, eps, suc):
+    """
+    Zapíše výsledky jedné epizody do CSV.
+    """
     header = ["episode", "reward", "moving_avg", "epsilon", "success"]
     write_head = not os.path.exists(path)
     with open(path, "a", newline="") as f:
