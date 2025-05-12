@@ -1,12 +1,12 @@
 """
-Dvouvrstvý plně propojený Q-síťový aproximátor
+Dvouvrstvý plně propojený Q-network model
 """
 
 import torch.nn as nn
 
 
 class QNetwork(nn.Module):
-    def __init__(self, state_size: int, action_size: int) -> None:
+    def __init__(self, state_size, action_size):
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(state_size, 256),

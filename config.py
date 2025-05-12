@@ -1,8 +1,8 @@
 """
-Centrální konfigurace experimentu
+Centrální konfigurace
 """
 
-RUN_ID = "5"
+RUN_ID = "4"
 ENV_NAME = "LunarLander-v3"
 
 # náhodný seed

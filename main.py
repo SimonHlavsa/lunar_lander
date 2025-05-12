@@ -102,13 +102,13 @@ for ep in range(config.NUM_EPISODES):
     if ep % 10 == 0:
         cur_sr = np.mean(suc_win)
         print(
-            f"Ep {ep:4d} | R {total_rew:6.1f} | "
-            f"MA {ma_val:6.1f} | ε {eps:5.3f} | SR(200) {cur_sr:4.2f}"
+            f"Ep {ep:4d} | reward {total_rew:6.1f} | "
+            f"MA {ma_val:6.1f} | epsilon {eps:5.3f} | success-rate {cur_sr:4.2f}"
         )
 
     if len(ma_hist) >= 200:
         if np.mean(ma_hist[-200:]) >= 200 and np.mean(suc_hist[-200:]) >= 0.9:
-            print(f"✓ Kritérium splněno v epizodě {ep}.")
+            print(f"Kritérium splněno v epizodě {ep}.")
             break
 
 # uložení modelu a grafů

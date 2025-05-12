@@ -1,5 +1,5 @@
 """
-Spuštění vytrénovaného agenta s vizualizací
+Spuštění trénovaného agenta s vizualizací
 """
 
 import gymnasium as gym
